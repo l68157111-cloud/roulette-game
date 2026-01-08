@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ロシアンルーレット試作</title>
+
+<style>
+body {
+  background:#111;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+}
+
+.player {
+  border:2px solid #555;
+  padding:10px;
+  margin:10px;
+}
+
+#log {
+  min-height:60px;
+  margin:10px;
+  color:#ccc;
+}
+
+button {
+  padding:10px;
+  margin:5px;
+  font-size:16px;
+}
+
+.items button {
+  background:#333;
+}
+</style>
+</head>
+
+<body>
+
+<h2>ロシアンルーレット</h2>
+
+<div class="player">
+  <div>あなた ❤️ <span id="playerHp">3</span></div>
+</div>
+
+<div class="player">
+  <div>相手 ❤️ <span id="enemyHp">3</span></div>
+</div>
+
+<div id="log">ゲーム開始</div>
+
+<div id="actions"></div>
+
+<script>
+// =====================
+// ゲームデータ
+// =====================
+let bullets = []; // true=実弾 false=空弾
+let turn = "player";
+
+const player = {
+  hp: 3,
+  inventory: {
+    beer: 0
+  }
+};
+
+// =====================
+// 初期化
+// =====================
+startRound();
+
+function startRound(){
+  player.hp = 3;
+  player.inventory.beer = 0;
+  loadBullets();
+  giveItems(3);
+  render();
+  log("ラウンド開始");
+}
+
+// =====================
+// 弾の装填
+// =====================
+function loadBullets(){
+  bullets = [];
+  const total = 6;
+  let real = 3;
+  let blank = 3;
+  for(let i=0;i<real;i++) bullets.push(true);
+  for(let i=0;i<blank;i++) bullets.push(false);
+  shuffle(bullets);
+}
+
+// =====================
+// アイテム支給
+// =====================
+function giveItems(n){
+  for(let i=0;i<n;i++){
+    player.inventory.beer++;
+  }
+}
+
+// =====================
+// UI描画
+// =====================
+function render(){
+  document.getElementById("playerHp").textContent = player.hp;
+  document.getElementById("enemyHp").textContent = "3";
+
+  const actions = document.getElementById("actions");
+  actions.innerHTML = "";
+
+  // 撃つ
+  addButton("自分に撃つ", ()=>shoot("self"));
+  addButton("相手に撃つ", ()=>shoot("enemy"));
+
+  // アイテム
+  if(player.inventory.beer > 0){
+    actions.appendChild(document.createElement("hr"));
+    addButton("ビール ("+player.inventory.beer+")", useBeer);
+  }
+}
+
+function addButton(text, fn){
+  const b = document.createElement("button");
+  b.textContent = text;
+  b.onclick = fn;
+  document.getElementById("actions").appendChild(b);
+}
+
+// =====================
+// ログ
+// =====================
+function log(t){
+  document.getElementById("log").textContent = t;
+}
+
+// =====================
+// 撃つ処理
+// =====================
+function shoot(target){
+  if(bullets.length === 0){
+    loadBullets();
+    log("再装填");
+    return;
+  }
+
+  log("銃を発射中…");
+
+  setTimeout(()=>{
+    const bullet = bullets.shift();
+
+    if(bullet){
+      flash("red");
+      if(target === "self"){
+        player.hp--;
+        log("実弾！あなたがダメージ");
+      }else{
+        log("実弾！相手がダメージ");
+      }
+    }else{
+      flash("green");
+      log("空弾！");
+    }
+
+    if(player.hp <= 0){
+      log("あなたの負け");
+      return;
+    }
+
+    render();
+  },4000);
+}
+
+// =====================
+// ビール
+// =====================
+function useBeer(){
+  if(player.inventory.beer <= 0) return;
+
+  player.inventory.beer--;
+  log("ビールを使用…");
+
+  setTimeout(()=>{
+    const bullet = bullets.shift();
+    if(bullet){
+      log("ビール：実弾が出た");
+    }else{
+      log("ビール：空弾が出た");
+    }
+    render();
+  },2000);
+}
+
+// =====================
+// 演出
+// =====================
+function flash(color){
+  document.body.style.background = color==="red" ? "#500" : "#050";
+  setTimeout(()=>document.body.style.background="#111",500);
+}
+
+// =====================
+// util
+// =====================
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+}
+</script>
+
+</body>
+</html>
